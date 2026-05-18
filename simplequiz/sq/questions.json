@@ -1,0 +1,74 @@
+[
+  {
+    "category": "History & Geography",
+    "question": "Which is the largest continent in the world?",
+    "options": ["Africa", "Asia", "Europe", "Australia"],
+    "answer": "Asia"
+  },
+  {
+    "category": "History & Geography",
+    "question": "Who was the first President of India?",
+    "options": ["Jawaharlal Nehru", "Rajendra Prasad", "Mahatma Gandhi", "Sardar Patel"],
+    "answer": "Rajendra Prasad"
+  },
+  {
+    "category": "History & Geography",
+    "question": "What is the capital of Japan?",
+    "options": ["Seoul", "Tokyo", "Bangkok", "Beijing"],
+    "answer": "Tokyo"
+  },
+  {
+    "category": "History & Geography",
+    "question": "Which ocean is the largest?",
+    "options": ["Atlantic", "Indian", "Pacific", "Arctic"],
+    "answer": "Pacific"
+  },
+  {
+    "category": "Science & Nature",
+    "question": "Which planet is known as the Red Planet?",
+    "options": ["Venus", "Mars", "Jupiter", "Mercury"],
+    "answer": "Mars"
+  },
+  {
+    "category": "Science & Nature",
+    "question": "What gas do plants absorb from the atmosphere?",
+    "options": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"],
+    "answer": "Carbon Dioxide"
+  },
+  {
+    "category": "Science & Nature",
+    "question": "How many bones are there in the adult human body?",
+    "options": ["206", "300", "150", "180"],
+    "answer": "206"
+  },
+  {
+    "category": "Science & Nature",
+    "question": "What is the boiling point of water?",
+    "options": ["90°C", "100°C", "80°C", "120°C"],
+    "answer": "100°C"
+  },
+  {
+    "category": "Mixed Trivia Fun Facts",
+    "question": "Which animal is known as the King of the Jungle?",
+    "options": ["Tiger", "Elephant", "Lion", "Leopard"],
+    "answer": "Lion"
+  },
+  {
+    "category": "Mixed Trivia Fun Facts",
+    "question": "How many colors are there in a rainbow?",
+    "options": ["5", "6", "7", "8"],
+    "answer": "7"
+  },
+  {
+    "category": "Mixed Trivia Fun Facts",
+    "question": "Which bird is famous for mimicking sounds?",
+    "options": ["Crow", "Parrot", "Sparrow", "Peacock"],
+    "answer": "Parrot"
+  },
+  {
+    "category": "Mixed Trivia Fun Facts",
+    "question": "Which is the fastest land animal?",
+    "options": ["Lion", "Horse", "Cheetah", "Tiger"],
+    "answer": "Cheetah"
+  }
+]
