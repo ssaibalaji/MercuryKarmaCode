@@ -1,0 +1,55 @@
+# TRAVEL AGENT COMPANION - KNOWLEDGE BASE & FREQUENTLY ASKED QUESTIONS
+
+===============================================================================
+SECTION 1: CORE TRAVEL OPERATIONS & CUSTOMER SERVICE POLICIES
+===============================================================================
+
+Q1: What is the standard check-in and check-out time for partner hotel properties?
+A1: Across most global partner properties, standard hotel check-in begins at 3:00 PM local time, and check-out must be completed by 11:00 AM local time. Early check-in or late check-out requests are subject to room availability upon arrival and can incur a fee ranging from 50% to 100% of the daily room rate if not negotiated in advance during booking.
+
+Q2: What is the comprehensive cancellation and refund policy for premium holiday packages?
+A2: Our holiday package cancellation policy operates on a structured tiered timeline to minimize loss:
+- Cancellations requested more than 60 days prior to the departure date receive a full 100% refund of the package price minus a non-refundable booking deposit of $250.
+- Cancellations requested between 30 and 59 days prior to departure receive a 50% refund of the total package value.
+- Cancellations requested fewer than 30 days prior to the departure date are completely non-refundable. We highly recommend purchasing comprehensive Travel Insurance to protect against unforeseen circumstances.
+
+Q3: Does the travel platform provide automated assistance for visas, entry permits, and passport validity checks?
+A3: While our application offers detailed informational updates regarding global entry requirements, it does not process visas directly. Passengers are legally obligated to hold a passport valid for at least six (6) months beyond their scheduled return date. For specialized e-visas and entry clearances, our portal provides direct referral links to official government websites or partner visa processing agencies like CIBTvisas.
+
+Q4: How does an agent handle an emergency flight cancellation or missed connection mid-transit?
+A4: In the event of an airline-initiated cancellation or missed connecting flight:
+1. Direct the user to the airline's airport customer service desk immediately to obtain an alternative boarding pass.
+2. If the airline's desk lines are inaccessible, use our internal Global Distribution System (GDS) dashboard to cross-reference alternative available routes.
+3. Advise the user that under regulation EC 261/2004 (for European flights) or equivalent local statutes, airlines are mandated to provide meal vouchers and overnight hotel accommodation if the delay extends overnight.
+
+===============================================================================
+SECTION 2: CUSTOMIZED ITINERARY CURATION & BUDGET ALLOCATIONS
+===============================================================================
+
+Q5: What are the standardized budget brackets used inside our generative itinerary algorithm?
+A5: Our system categorizes daily traveler spending behavior into three strictly managed pricing tiers:
+- Economy Tier: Maintained at $50 - $120 USD per person per day. Focuses on budget hostels, public transportation passes, street food, and free or low-cost walking tours.
+- Standard Tier: Maintained at $150 - $350 USD per person per day. Focuses on 3-star to 4-star boutique hotels, sit-down casual dining, private ride-shares, and pre-booked museum entries.
+- Luxury Tier: Starting at $500+ USD per person per day. Focuses on 5-star experiential resorts, fine-dining tasting menus, private chauffeured cars, and exclusive VIP personal tour guides.
+
+Q6: How do we build customized itineraries for travelers with severe dietary restrictions or allergies?
+A6: When curating itineraries for travelers with restrictive diets (e.g., Celiac/Gluten-Free, Strict Vegan, Severe Peanut Allergy):
+1. Programmatically tag the customer profile within our system.
+2. Filter restaurant recommendations exclusively through platforms providing vetted allergy menus.
+3. Automatically generate a downloadable 'Allergy Translation Card' in the destination's native language which the traveler can present to waitstaff during their journey.
+
+Q7: What is the optimal itinerary duration recommendation for major international transit cities?
+A7: For massive multi-layered cultural hubs (e.g., Tokyo, London, Paris, New York), a minimum of 5 to 7 days is requested to cover core highlights without causing travel fatigue. For regional stopovers or highly localized destinations (e.g., Reykjavik, Singapore, Amsterdam), a duration of 2 to 4 days is sufficient to capture the essential landmarks.
+
+===============================================================================
+SECTION 3: TECHNICAL INTEGRATION, API HANDLING, AND SAFETY
+===============================================================================
+
+Q8: How does our Retrieval-Augmented Generation (RAG) vector database stay updated with live travel facts?
+A8: Our Vector Database runs an automated ingestion pipeline every 24 hours. It pulls curated travel advisories from the State Department API, global health warnings from the CDC, and flight schedule changes from our airline data partners. This ensures that when the LLM retrieves context, it relies on contemporary data rather than stale training limits.
+
+Q9: What happens if a user inputs an unsafe or completely unauthorized destination prompt?
+A9: If a user enters a destination currently flagged with a 'Level 4: Do Not Travel' advisory by international safety bodies, the planner application activates a safety guardrail. It redirects the conversational chain, delivers a standard safety notice detailing the current risks, and presents alternative nearby safe destinations for the user to plan instead.
+
+Q10: Can the itinerary generator process group bookings with mixed budgets or conflicting interests?
+A10: Yes. The system can process multi-profile requests by generating a 'Split-Interest Itinerary'. It assigns centralized shared core activities in the morning (e.g., a group breakfast or standard city landmark tour) and branches into separate customizable paths for the afternoon based on individual user preferences before re-merging for dinner.
