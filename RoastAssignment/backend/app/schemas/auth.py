@@ -28,6 +28,13 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class GoogleCallbackRequest(BaseModel):
+    """Payload the SPA sends after Google redirects it to /auth/callback."""
+
+    code: str
+    state: str
+
+
 class UserUpdateRequest(BaseModel):
     """Payload for updating the current user's profile."""
 

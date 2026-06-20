@@ -18,7 +18,7 @@ export function useSubmission(id: number) {
   return useQuery({
     queryKey: ['submissions', id],
     queryFn: () => api.get<Submission>(`/submissions/${id}`).then((r) => r.data),
-    enabled: id !== undefined,
+    enabled: Number.isFinite(id),
   });
 }
 
@@ -28,6 +28,28 @@ export function useSyncSubmissions() {
     mutationFn: () => api.post('/submissions/sync'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
+    },
+  });
+}
+
+export interface SubmissionCreatePayload {
+  assignmentName: string;
+  githubRepoUrl: string;
+}
+
+export function useCreateSubmission() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: SubmissionCreatePayload) =>
+      api
+        .post<Submission>('/submissions', {
+          assignment_name: data.assignmentName,
+          github_repo_url: data.githubRepoUrl,
+        })
+        .then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

@@ -13,6 +13,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimatedList } from '../components/ui/AnimatedList';
+import { GradientButton } from '../components/ui/GradientButton';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../hooks/useDashboard';
 import { useSubmissions } from '../hooks/useSubmissions';
@@ -29,12 +30,21 @@ export function DashboardPage(): JSX.Element {
   return (
     <PageWrapper>
       <Box maxW="6xl" mx="auto" px={4} py={8}>
-        <Heading size="lg" mb={2}>
-          Dashboard
-        </Heading>
-        <Text color="gray.500" mb={6}>
-          Welcome back{user?.fullName ? `, ${user.fullName}` : ''}.
-        </Text>
+        <Flex justify="space-between" align="flex-start" mb={6} wrap="wrap" gap={4}>
+          <Box>
+            <Heading size="lg" mb={2}>
+              Dashboard
+            </Heading>
+            <Text color="gray.500">
+              Welcome back{user?.fullName ? `, ${user.fullName}` : ''}.
+            </Text>
+          </Box>
+          {user?.role === 'student' && (
+            <GradientButton as={RouterLink} to="/submissions/new">
+              Submit Assignment
+            </GradientButton>
+          )}
+        </Flex>
 
         <SimpleGrid columns={{ base: 1, sm: 2, md: 5 }} spacing={4} mb={10}>
           <GlassCard>

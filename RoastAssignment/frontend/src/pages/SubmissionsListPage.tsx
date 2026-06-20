@@ -1,4 +1,5 @@
 import { Flex, Heading, Spinner, Text } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { SubmissionTable } from '../components/submissions/SubmissionTable';
 import { GradientButton } from '../components/ui/GradientButton';
@@ -22,6 +23,11 @@ export function SubmissionsListPage() {
             isLoading={syncSubmissions.isPending}
           >
             Sync now
+          </GradientButton>
+        )}
+        {user?.role === 'student' && (
+          <GradientButton as={RouterLink} to="/submissions/new">
+            Submit Assignment
           </GradientButton>
         )}
       </Flex>

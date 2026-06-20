@@ -8,21 +8,26 @@ export function AuthCallbackPage(): JSX.Element {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
+    const code = params.get('code');
+    const state = params.get('state');
 
-    if (!accessToken || !refreshToken) {
+    if (!code || !state) {
       navigate('/login', { replace: true });
       return;
     }
 
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-
-    // Full reload so AuthContext re-mounts and picks up the new tokens.
+    // Google's registered redirect URI is this page (an SPA can't host a
+    // server-side redirect target), so we forward the code/state to the
+    // backend ourselves. `withCredentials` ensures the httpOnly
+    // `oauth_state` CSRF cookie set by /auth/google is sent.
     api
-      .get('/auth/me')
-      .then(() => { window.location.href = '/dashboard'; })
+      .post('/auth/google/callback', { code, state }, { withCredentials: true })
+      .then(({ data }) => {
+        localStorage.setItem('access_token', data.accessToken);
+        localStorage.setItem('refresh_token', data.refreshToken);
+        // Full reload so AuthContext re-mounts and picks up the new tokens.
+        window.location.href = '/dashboard';
+      })
       .catch(() => navigate('/login', { replace: true }));
   }, [navigate]);
 

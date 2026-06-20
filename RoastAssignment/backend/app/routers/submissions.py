@@ -1,13 +1,20 @@
-"""Submission endpoints: list, detail, and manual Google Forms sync trigger."""
-from fastapi import APIRouter, BackgroundTasks, Depends
+"""Submission endpoints: list, detail, manual creation, and Google Forms sync trigger."""
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_role
 from app.exceptions import ForbiddenError, NotFoundError
-from app.models.submission import Submission
+from app.models.submission import SyncStatus, Submission
 from app.models.user import User, UserRole
-from app.schemas.submission import SubmissionResponse, SubmissionWithEvaluation
+from app.schemas.submission import (
+    SubmissionCreateRequest,
+    SubmissionResponse,
+    SubmissionWithEvaluation,
+)
 from app.services.evaluation_service import run_evaluation_for_submission
 from app.services.google_forms_sync import sync_submissions
 
@@ -32,6 +39,38 @@ async def list_submissions(
         .limit(limit)
         .all()
     )
+
+
+@router.post("/", response_model=SubmissionResponse, status_code=status.HTTP_201_CREATED)
+async def create_submission(
+    data: SubmissionCreateRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role("student")),
+) -> Submission:
+    """Let a student submit a GitHub repo for evaluation directly from the app.
+
+    This is the manual-entry counterpart to the Google Forms sync: the
+    submission is already matched to `user` (the authenticated student), so
+    it's created with `sync_status=synced` and evaluation is dispatched
+    immediately as a background task.
+    """
+    submission = Submission(
+        user_id=user.id,
+        student_name=user.full_name or user.email,
+        student_email=user.email,
+        assignment_name=data.assignment_name,
+        github_repo_url=data.github_repo_url,
+        google_form_response_id=f"manual-{uuid4()}",
+        sync_status=SyncStatus.synced,
+        submitted_at=datetime.now(timezone.utc),
+    )
+    db.add(submission)
+    db.commit()
+    db.refresh(submission)
+
+    background_tasks.add_task(run_evaluation_for_submission, submission.id)
+    return submission
 
 
 @router.get("/{submission_id}", response_model=SubmissionWithEvaluation)

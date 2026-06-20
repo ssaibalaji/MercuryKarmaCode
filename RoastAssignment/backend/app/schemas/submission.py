@@ -1,8 +1,36 @@
 """Pydantic schemas for submission endpoints."""
+import re
 from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
+
+_GITHUB_REPO_URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/?$")
+
+
+class SubmissionCreateRequest(BaseModel):
+    """Payload for a student manually submitting a repo for evaluation."""
+
+    assignment_name: str
+    github_repo_url: str
+
+    @field_validator("assignment_name")
+    @classmethod
+    def _validate_assignment_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Assignment name is required")
+        return value
+
+    @field_validator("github_repo_url")
+    @classmethod
+    def _validate_github_repo_url(cls, value: str) -> str:
+        value = value.strip().rstrip("/")
+        if not _GITHUB_REPO_URL_RE.match(value):
+            raise ValueError(
+                "Must be a valid GitHub repository URL, e.g. https://github.com/owner/repo"
+            )
+        return value
 
 
 class SubmissionResponse(BaseModel):

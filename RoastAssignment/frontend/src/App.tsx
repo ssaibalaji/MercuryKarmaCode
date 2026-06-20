@@ -14,6 +14,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AdminPage } from './pages/AdminPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { SubmitAssignmentPage } from './pages/SubmitAssignmentPage';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <SubmissionsListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/submissions/new"
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <SubmitAssignmentPage />
                   </ProtectedRoute>
                 }
               />

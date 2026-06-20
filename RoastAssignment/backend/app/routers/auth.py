@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from app.dependencies import get_current_user
 from app.limiter import limiter
 from app.models.user import User
 from app.schemas.auth import (
+    GoogleCallbackRequest,
     RefreshRequest,
     RegisterRequest,
     Token,
@@ -127,20 +128,22 @@ async def google_login() -> RedirectResponse:
     return response
 
 
-@router.get("/google/callback")
+@router.post("/google/callback", response_model=Token)
 async def google_callback(
-    code: str,
-    state: str,
+    data: GoogleCallbackRequest,
+    response: Response,
     oauth_state: Optional[str] = Cookie(None),
     role: str = "student",
     db: Session = Depends(get_db),
-) -> RedirectResponse:
-    """Handle Google's redirect back with an authorization code.
+) -> Token:
+    """Exchange the authorization code the SPA received from Google.
 
-    Verifies the `state` parameter matches the value we set in the
-    `oauth_state` cookie to prevent CSRF attacks. Then exchanges the code,
-    fetches the Google profile, finds-or-creates the local user, issues our
-    own access/refresh tokens, and redirects to the frontend callback page.
+    Google's registered redirect URI is the frontend's `/auth/callback`
+    page (an SPA can't host a server-side redirect endpoint), so the
+    frontend forwards the `code`/`state` it received here instead of Google
+    calling this endpoint directly. Verifies `state` against the
+    `oauth_state` cookie to prevent CSRF, then exchanges the code, finds or
+    creates the local user, and returns our own access/refresh tokens.
     """
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(
@@ -149,18 +152,18 @@ async def google_callback(
         )
 
     # Constant-time comparison prevents timing attacks on the state token.
-    if not oauth_state or not secrets.compare_digest(state, oauth_state):
+    if not oauth_state or not secrets.compare_digest(data.state, oauth_state):
         logger.warning(
             "Google OAuth CSRF check failed: state mismatch (cookie=%r, param=%r)",
             oauth_state,
-            state,
+            data.state,
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OAuth state parameter",
         )
 
-    google_tokens = await get_google_tokens(code)
+    google_tokens = await get_google_tokens(data.code)
     google_access_token = google_tokens.get("access_token")
     if not google_access_token:
         logger.warning("Google token exchange failed: %s", google_tokens)
@@ -173,20 +176,9 @@ async def google_callback(
     user = auth_service.get_or_create_google_user(db, google_user_info, role)
     tokens = _issue_token_pair(db, user)
 
-    redirect_params = urlencode(
-        {
-            "access_token": tokens.access_token,
-            "refresh_token": tokens.refresh_token,
-            "token_type": tokens.token_type,
-        }
-    )
-    response = RedirectResponse(
-        url=f"{settings.FRONTEND_URL}/auth/callback?{redirect_params}",
-        status_code=status.HTTP_302_FOUND,
-    )
     # Clear the state cookie — it's been consumed.
     response.delete_cookie(key=_OAUTH_STATE_COOKIE)
-    return response
+    return tokens
 
 
 @router.get("/me", response_model=UserResponse)
