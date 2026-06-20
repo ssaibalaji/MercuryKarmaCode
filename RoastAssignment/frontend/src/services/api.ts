@@ -43,18 +43,38 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function redirectToLogin(): void {
+  localStorage.clear();
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login';
+  }
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     if (error.response?.status === 401 && !error.config._retry) {
       error.config._retry = true;
       const refresh = localStorage.getItem('refresh_token');
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
-        refresh_token: refresh,
-      });
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      return api(error.config);
+      // No refresh token (logged out / never logged in) — don't bother
+      // calling /auth/refresh, it'll just 422 on a null token. Send the
+      // user straight to login instead of looping on every failed request.
+      if (!refresh) {
+        redirectToLogin();
+        return Promise.reject(error);
+      }
+      try {
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
+          refresh_token: refresh,
+        });
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        return api(error.config);
+      } catch (refreshError) {
+        // Refresh token itself is invalid/expired — same outcome, go to login.
+        redirectToLogin();
+        return Promise.reject(refreshError);
+      }
     }
     return Promise.reject(error);
   }

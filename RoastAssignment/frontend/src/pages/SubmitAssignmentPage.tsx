@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Heading, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimatedInput } from '../components/ui/AnimatedInput';
@@ -61,6 +61,11 @@ export function SubmitAssignmentPage(): JSX.Element {
   return (
     <PageWrapper>
       <Box maxW="lg" mx="auto" px={4} py={8}>
+        <Flex justify="flex-end" mb={4}>
+          <GradientButton onClick={() => navigate('/dashboard')}>
+            ← Back to Dashboard
+          </GradientButton>
+        </Flex>
         <Heading size="lg" mb={2}>
           Submit Assignment
         </Heading>

@@ -1,5 +1,5 @@
 import { Flex, Heading, Spinner, Text } from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { SubmissionTable } from '../components/submissions/SubmissionTable';
 import { GradientButton } from '../components/ui/GradientButton';
@@ -8,6 +8,7 @@ import { useSubmissions, useSyncSubmissions } from '../hooks/useSubmissions';
 
 export function SubmissionsListPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useSubmissions();
   const syncSubmissions = useSyncSubmissions();
 
@@ -15,21 +16,28 @@ export function SubmissionsListPage() {
 
   return (
     <PageWrapper>
-      <Flex justify="space-between" align="center" mb={6} px={6} pt={6}>
-        <Heading size="lg">Submissions</Heading>
-        {canSync && (
-          <GradientButton
-            onClick={() => syncSubmissions.mutate()}
-            isLoading={syncSubmissions.isPending}
-          >
-            Sync now
-          </GradientButton>
-        )}
-        {user?.role === 'student' && (
-          <GradientButton as={RouterLink} to="/submissions/new">
-            Submit Assignment
-          </GradientButton>
-        )}
+      <Flex direction="column" px={6} pt={6} mb={6} gap={3}>
+        <GradientButton onClick={() => navigate('/dashboard')} alignSelf="flex-end">
+          ← Back to Dashboard
+        </GradientButton>
+        <Flex justify="space-between" align="center">
+          <Heading size="lg">Submissions</Heading>
+          <Flex gap={3}>
+            {canSync && (
+              <GradientButton
+                onClick={() => syncSubmissions.mutate()}
+                isLoading={syncSubmissions.isPending}
+              >
+                Sync now
+              </GradientButton>
+            )}
+            {user?.role === 'student' && (
+              <GradientButton onClick={() => navigate('/submissions/new')}>
+                Submit Assignment
+              </GradientButton>
+            )}
+          </Flex>
+        </Flex>
       </Flex>
 
       <Flex direction="column" px={6} pb={6}>

@@ -1,12 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import api from '../services/api';
 
 export function AuthCallbackPage(): JSX.Element {
   const navigate = useNavigate();
+  // React 18 StrictMode (dev only) double-invokes effects, which would send
+  // Google's single-use authorization code twice — the second exchange can
+  // still succeed on Google's side within the same race window, producing
+  // two valid-but-redundant token pairs and a DB collision on insert. This
+  // ref ensures the exchange only ever fires once per mount.
+  const hasExchanged = useRef(false);
 
   useEffect(() => {
+    if (hasExchanged.current) return;
+    hasExchanged.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');

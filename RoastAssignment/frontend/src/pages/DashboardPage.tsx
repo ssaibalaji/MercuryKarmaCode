@@ -9,7 +9,7 @@ import {
   StatNumber,
   Text,
 } from '@chakra-ui/react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimatedList } from '../components/ui/AnimatedList';
@@ -22,10 +22,14 @@ const RECENT_SUBMISSIONS_LIMIT = 5;
 
 export function DashboardPage(): JSX.Element {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: stats, isLoading: isStatsLoading } = useDashboardStats();
   const { data: submissionsPage, isLoading: isSubmissionsLoading } = useSubmissions(1);
 
-  const recentSubmissions = (submissionsPage ?? []).slice(0, RECENT_SUBMISSIONS_LIMIT);
+  const recentSubmissions = (Array.isArray(submissionsPage) ? submissionsPage : []).slice(
+    0,
+    RECENT_SUBMISSIONS_LIMIT
+  );
 
   return (
     <PageWrapper>
@@ -40,7 +44,7 @@ export function DashboardPage(): JSX.Element {
             </Text>
           </Box>
           {user?.role === 'student' && (
-            <GradientButton as={RouterLink} to="/submissions/new">
+            <GradientButton onClick={() => navigate('/submissions/new')}>
               Submit Assignment
             </GradientButton>
           )}

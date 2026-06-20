@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../../hooks/useAuth';
+import { AppHeader } from '../layout/AppHeader';
 import { UserRole } from '../../types';
 
 interface ProtectedRouteProps {
@@ -31,7 +32,12 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps):
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <AppHeader />
+      {children}
+    </>
+  );
 }
 
 export default ProtectedRoute;
