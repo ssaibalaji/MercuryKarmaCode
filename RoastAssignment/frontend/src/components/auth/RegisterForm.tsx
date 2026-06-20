@@ -60,8 +60,10 @@ export function RegisterForm(): JSX.Element {
     try {
       await authService.register({ email, password, fullName: fullName || undefined, role });
       navigate('/login', { replace: true });
-    } catch {
-      setSubmitError('Could not create your account. The email may already be registered.');
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setSubmitError(message ?? 'Could not create your account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
