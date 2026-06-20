@@ -13,6 +13,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminPage } from './pages/AdminPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<div>Assignment Evaluator</div>} />
               {/* MODULE_ROUTES_GO_HERE */}
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

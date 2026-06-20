@@ -115,11 +115,12 @@ async def google_login() -> RedirectResponse:
         url=f"{GOOGLE_AUTH_URL}?{urlencode(params)}",
         status_code=status.HTTP_302_FOUND,
     )
+    is_secure = settings.FRONTEND_URL.startswith("https")
     response.set_cookie(
         key=_OAUTH_STATE_COOKIE,
         value=state,
         httponly=True,
-        secure=True,
+        secure=is_secure,  # False on http://localhost, True in production
         samesite="lax",
         max_age=300,  # 5 minutes — more than enough for a consent screen
     )
