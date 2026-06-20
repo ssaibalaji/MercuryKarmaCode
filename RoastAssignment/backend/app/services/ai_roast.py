@@ -1,4 +1,4 @@
-"""Generate a witty-but-constructive AI "roast" code review using Anthropic's API."""
+"""Generate a witty-but-constructive AI "roast" code review using OpenAI's API."""
 import logging
 import re
 
@@ -77,31 +77,31 @@ async def generate_roast(files: list[dict]) -> tuple[str, float]:
     Never raises: on missing API key, API errors, or unparseable responses, returns a
     fallback message and a score of 0.0 so the evaluation pipeline can keep going.
     """
-    if not settings.ANTHROPIC_API_KEY:
-        logger.warning("ANTHROPIC_API_KEY not configured; skipping AI roast.")
-        return "AI roast skipped: ANTHROPIC_API_KEY not configured.", 0.0
+    if not settings.OPENAI_API_KEY:
+        logger.warning("OPENAI_API_KEY not configured; skipping AI roast.")
+        return "AI roast skipped: OPENAI_API_KEY not configured.", 0.0
 
     try:
-        import anthropic
+        import openai
     except ImportError:
-        logger.error("anthropic package not installed; skipping AI roast.")
-        return "AI roast skipped: anthropic package not installed.", 0.0
+        logger.error("openai package not installed; skipping AI roast.")
+        return "AI roast skipped: openai package not installed.", 0.0
 
     prompt = _build_prompt(files)
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
+        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             max_tokens=1024,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
         )
-        text = "".join(
-            block.text for block in response.content if getattr(block, "type", None) == "text"
-        )
+        text = response.choices[0].message.content or ""
         if not text.strip():
-            raise ValueError("Empty response from Anthropic API")
+            raise ValueError("Empty response from OpenAI API")
         return _parse_score(text)
     except Exception as exc:  # noqa: BLE001 - must never break the evaluation pipeline
         logger.error("AI roast generation failed: %s", exc, exc_info=True)

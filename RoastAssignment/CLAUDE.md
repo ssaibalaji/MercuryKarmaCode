@@ -192,7 +192,7 @@ GOOGLE_FORMS_SHEET_ID=your-form-response-sheet-id
 GITHUB_TOKEN=ghp_xxx
 
 # LLM provider (AI roast generation)
-ANTHROPIC_API_KEY=sk-ant-xxx
+OPENAI_API_KEY=sk-xxx
 
 # Email notifications
 SENDGRID_API_KEY=SG.xxx

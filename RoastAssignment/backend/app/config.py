@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     GITHUB_FETCH_TIMEOUT_SECONDS: int = 30
 
     # AI roast / evaluation (feature logs-and-skips if empty)
-    ANTHROPIC_API_KEY: str = ""
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     # Email notifications (feature logs-and-skips if empty)
     SENDGRID_API_KEY: str = ""
