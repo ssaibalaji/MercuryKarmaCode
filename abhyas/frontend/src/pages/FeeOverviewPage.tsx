@@ -97,13 +97,17 @@ export function FeeOverviewPage() {
     setIsGenerating(true);
     try {
       const summary = await feeService.generateFeesFromAttendance();
-      const studentCount = new Set(summary.created.map((entry) => entry.student_id)).size;
+      const studentCount = new Set(
+        [...summary.created, ...summary.updated].map((entry) => entry.student_id)
+      ).size;
       toast({
-        title: `Created ${summary.created.length} fee entries across ${studentCount} students.`,
+        title:
+          `Created ${summary.created.length} and updated ${summary.updated.length} fee entries ` +
+          `across ${studentCount} students.`,
         description:
-          `Skipped: ${summary.skipped_already_generated} already generated, ` +
-          `${summary.skipped_no_daily_fee} with no daily fee set, ` +
-          `${summary.skipped_zero_days} with zero attendance days.`,
+          `Skipped: ${summary.skipped_already_generated} already paid (locked), ` +
+          `${summary.skipped_no_daily_fee} with no monthly fee set, ` +
+          `${summary.skipped_zero_days} with a zero monthly fee.`,
         status: 'success',
         duration: 6000,
         isClosable: true,

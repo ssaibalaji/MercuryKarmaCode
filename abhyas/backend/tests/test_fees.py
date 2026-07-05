@@ -19,7 +19,6 @@ from app.models.attendance import AttendanceRecord, AttendanceStatus
 from app.models.fee import FeeFrequency, FeeStructure, Payment, PaymentMethod, PaymentStatus
 from app.models.student import Student
 from app.models.user import User
-from app.services.student_service import calculate_monthly_fee
 
 
 @pytest.fixture()
@@ -268,6 +267,7 @@ def _make_student(
     parent_user_id: int | None = None,
     daily_fee: Decimal | None = None,
     scheduled_days: list[str] | None = None,
+    monthly_fee: Decimal | None = None,
 ) -> Student:
     s = Student(
         teacher_id=teacher.id,
@@ -279,6 +279,7 @@ def _make_student(
         parent_user_id=parent_user_id,
         daily_fee=daily_fee,
         scheduled_days=scheduled_days or [],
+        monthly_fee=monthly_fee,
     )
     db.add(s)
     db.commit()
@@ -693,10 +694,8 @@ def test_generate_fees_creates_full_month_amount_regardless_of_attendance_mix(
     client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
 ) -> None:
     year, month = _past_year_month()
-    student = _make_student(
-        test_db, teacher_user, daily_fee=Decimal("100.00"), scheduled_days=["mon", "tue", "wed", "thu", "fri"]
-    )
-    expected_amount = calculate_monthly_fee(Decimal("100.00"), ["mon", "tue", "wed", "thu", "fri"], year, month)
+    expected_amount = Decimal("2200.00")
+    student = _make_student(test_db, teacher_user, monthly_fee=expected_amount)
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=2, status=AttendanceStatus.late)
@@ -729,10 +728,8 @@ def test_generate_fees_bills_full_month_even_when_marked_absent_every_day(
 ) -> None:
     """Core behavior change: attendance status no longer affects the billed amount."""
     year, month = _past_year_month()
-    student = _make_student(
-        test_db, teacher_user, daily_fee=Decimal("50.00"), scheduled_days=["mon", "tue", "wed", "thu", "fri"]
-    )
-    expected_amount = calculate_monthly_fee(Decimal("50.00"), ["mon", "tue", "wed", "thu", "fri"], year, month)
+    expected_amount = Decimal("1100.00")
+    student = _make_student(test_db, teacher_user, monthly_fee=expected_amount)
 
     # Only one attendance record exists that month, purely as the "was active" signal,
     # and it is marked absent - the full scheduled amount must still be billed.
@@ -755,12 +752,12 @@ def test_generate_fees_bills_full_month_even_when_marked_absent_every_day(
     assert fee.amount == expected_amount
 
 
-def test_generate_fees_skips_student_with_no_daily_fee(
+def test_generate_fees_skips_student_with_no_monthly_fee(
     client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
 ) -> None:
     year, month = _past_year_month()
-    student = _make_student(test_db, teacher_user, scheduled_days=["mon", "tue", "wed", "thu", "fri"])
-    assert student.daily_fee is None
+    student = _make_student(test_db, teacher_user)
+    assert student.monthly_fee is None
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
 
@@ -774,11 +771,11 @@ def test_generate_fees_skips_student_with_no_daily_fee(
     assert test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).count() == 0
 
 
-def test_generate_fees_skips_when_no_scheduled_days_computed_amount_is_zero(
+def test_generate_fees_skips_when_monthly_fee_is_zero(
     client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
 ) -> None:
     year, month = _past_year_month()
-    student = _make_student(test_db, teacher_user, daily_fee=Decimal("100.00"), scheduled_days=[])
+    student = _make_student(test_db, teacher_user, monthly_fee=Decimal("0.00"))
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.absent)
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=2, status=AttendanceStatus.absent)
@@ -793,13 +790,12 @@ def test_generate_fees_skips_when_no_scheduled_days_computed_amount_is_zero(
     assert test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).count() == 0
 
 
-def test_generate_fees_is_idempotent_on_second_call(
+def test_generate_fees_regenerates_unpaid_fee_when_called_again(
     client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
 ) -> None:
+    """An already-generated but unpaid fee is recalculated (not duplicated) on re-run."""
     year, month = _past_year_month()
-    student = _make_student(
-        test_db, teacher_user, daily_fee=Decimal("100.00"), scheduled_days=["mon", "tue", "wed", "thu", "fri"]
-    )
+    student = _make_student(test_db, teacher_user, monthly_fee=Decimal("2200.00"))
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
 
@@ -807,26 +803,61 @@ def test_generate_fees_is_idempotent_on_second_call(
     assert first.status_code == 200
     assert len(first.json()["created"]) == 1
 
-    # Simulate the fee having since been paid; it must still never be regenerated.
-    fee = test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).first()
-    assert fee is not None
+    # Teacher revises the student's monthly fee before the fee is ever paid.
+    student.monthly_fee = Decimal("2500.00")
+    test_db.commit()
 
     second = client.post(GENERATE_URL, headers=auth_headers)
     assert second.status_code == 200
     body = second.json()
     assert body["created"] == []
+    assert len(body["updated"]) == 1
+    assert Decimal(body["updated"][0]["amount"]) == Decimal("2500.00")
+    assert body["skipped_already_generated"] == 0
+
+    fees = test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).all()
+    assert len(fees) == 1
+    assert fees[0].amount == Decimal("2500.00")
+
+
+def test_generate_fees_locks_fee_once_fully_paid(
+    client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
+) -> None:
+    """A fully-paid auto-generated fee is never recalculated or duplicated."""
+    year, month = _past_year_month()
+    student = _make_student(test_db, teacher_user, monthly_fee=Decimal("2200.00"))
+
+    _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
+
+    first = client.post(GENERATE_URL, headers=auth_headers)
+    assert first.status_code == 200
+    assert len(first.json()["created"]) == 1
+
+    fee = test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).first()
+    assert fee is not None
+    _make_payment(test_db, fee, student, amount="2200.00", status=PaymentStatus.completed)
+
+    # Even if the student's monthly fee changes afterward, a paid fee must never change.
+    student.monthly_fee = Decimal("9999.00")
+    test_db.commit()
+
+    second = client.post(GENERATE_URL, headers=auth_headers)
+    assert second.status_code == 200
+    body = second.json()
+    assert body["created"] == []
+    assert body["updated"] == []
     assert body["skipped_already_generated"] == 1
 
-    assert test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).count() == 1
+    fees = test_db.query(FeeStructure).filter(FeeStructure.student_id == student.id).all()
+    assert len(fees) == 1
+    assert fees[0].amount == Decimal("2200.00")
 
 
 def test_generate_fees_never_generates_for_current_month(
     client: TestClient, test_db: Session, teacher_user: User, auth_headers: dict[str, str]
 ) -> None:
     year, month = _current_year_month()
-    student = _make_student(
-        test_db, teacher_user, daily_fee=Decimal("100.00"), scheduled_days=["mon", "tue", "wed", "thu", "fri"]
-    )
+    student = _make_student(test_db, teacher_user, monthly_fee=Decimal("2200.00"))
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
 
@@ -846,9 +877,7 @@ def test_generate_fees_scoped_to_teachers_own_students(
     other_teacher_auth_headers: dict[str, str],
 ) -> None:
     year, month = _past_year_month()
-    student = _make_student(
-        test_db, teacher_user, daily_fee=Decimal("100.00"), scheduled_days=["mon", "tue", "wed", "thu", "fri"]
-    )
+    student = _make_student(test_db, teacher_user, monthly_fee=Decimal("2200.00"))
 
     _mark_attendance(test_db, student, teacher_user, year=year, month=month, day=1, status=AttendanceStatus.present)
 

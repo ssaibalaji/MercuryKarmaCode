@@ -32,7 +32,6 @@ from app.schemas.fee import (
     PaymentResponse,
 )
 from app.services import email_service, razorpay_service
-from app.services.student_service import calculate_monthly_fee
 
 logger = logging.getLogger(__name__)
 
@@ -332,10 +331,19 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
     For every student of `teacher_id`, and every past calendar month (strictly
     before the current month) with at least one logged AttendanceRecord (used
     only as a signal that the student was enrolled/attending that month), bill
-    the FULL month's scheduled fee via `calculate_monthly_fee(daily_fee,
-    scheduled_days, year, month)` - irrespective of actual attendance status
-    (present/absent/late has no bearing on the billed amount).
-    Idempotent: a given (student, year, month) is only ever auto-generated once.
+    the student's stored `Student.monthly_fee` value - irrespective of actual
+    attendance status (present/absent/late has no bearing on the billed
+    amount) and irrespective of which month is being billed (the same stored
+    monthly fee is applied to every qualifying past month). `monthly_fee` is
+    normally auto-computed from `daily_fee`/`scheduled_days` but may also be a
+    manual override set by the teacher - either way, whatever is currently
+    stored on the student is what gets billed.
+
+    A given (student, year, month) that was already auto-generated is only
+    ever regenerated (its amount recalculated to the student's current
+    `monthly_fee`) if it has NOT been fully paid yet. Once a fee has a
+    completed payment covering it in full, it is permanently locked and
+    skipped on every subsequent run.
     """
     today = date.today()
     current_year, current_month = today.year, today.month
@@ -353,6 +361,7 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
     )
 
     created: list[GeneratedFeeEntry] = []
+    updated: list[GeneratedFeeEntry] = []
     skipped_already_generated = 0
     skipped_no_daily_fee = 0
     skipped_zero_days = 0
@@ -363,12 +372,18 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
             continue
 
         student = db.query(Student).filter(Student.id == student_id).first()
-        if student is None or student.daily_fee is None:
+        if student is None or student.monthly_fee is None:
             skipped_no_daily_fee += 1
             continue
 
-        already_generated = (
+        amount = student.monthly_fee
+        if amount == 0:
+            skipped_zero_days += 1
+            continue
+
+        existing = (
             db.query(FeeStructure)
+            .options(selectinload(FeeStructure.payments))
             .filter(
                 FeeStructure.student_id == student_id,
                 FeeStructure.billing_year == year,
@@ -377,13 +392,22 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
             )
             .first()
         )
-        if already_generated is not None:
-            skipped_already_generated += 1
-            continue
 
-        amount = calculate_monthly_fee(student.daily_fee, student.scheduled_days or [], year, month)
-        if amount == 0:
-            skipped_zero_days += 1
+        if existing is not None:
+            if _outstanding_balance(existing) <= 0:
+                skipped_already_generated += 1
+                continue
+
+            existing.amount = amount
+            updated.append(
+                GeneratedFeeEntry(
+                    student_id=student_id,
+                    student_name=student.full_name,
+                    year=year,
+                    month=month,
+                    amount=amount,
+                )
+            )
             continue
 
         if month == 12:
@@ -396,7 +420,7 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
             amount=amount,
             frequency=FeeFrequency.monthly,
             due_date=due_date,
-            description=f"Auto-generated fee for {calendar.month_name[month]} {year} (full month, schedule-based)",
+            description=f"Auto-generated fee for {calendar.month_name[month]} {year} (from student's monthly fee)",
             billing_year=year,
             billing_month=month,
             is_auto_generated=True,
@@ -414,8 +438,10 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
 
     db.commit()
     logger.info(
-        "Generated %d auto fee(s) from attendance for teacher %s (skipped: already_generated=%d, no_daily_fee=%d, zero_amount=%d)",
+        "Generated %d / updated %d auto fee(s) from attendance for teacher %s "
+        "(skipped: already_generated=%d, no_daily_fee=%d, zero_amount=%d)",
         len(created),
+        len(updated),
         teacher_id,
         skipped_already_generated,
         skipped_no_daily_fee,
@@ -424,6 +450,7 @@ def generate_fees_from_attendance(db: Session, teacher_id: int) -> FeeGeneration
 
     return FeeGenerationSummaryResponse(
         created=created,
+        updated=updated,
         skipped_already_generated=skipped_already_generated,
         skipped_no_daily_fee=skipped_no_daily_fee,
         skipped_zero_days=skipped_zero_days,

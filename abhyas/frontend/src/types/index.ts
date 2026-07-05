@@ -167,6 +167,7 @@ export interface GeneratedFeeEntry {
 
 export interface FeeGenerationSummary {
   created: GeneratedFeeEntry[];
+  updated: GeneratedFeeEntry[];
   skipped_already_generated: number;
   skipped_no_daily_fee: number;
   skipped_zero_days: number;
