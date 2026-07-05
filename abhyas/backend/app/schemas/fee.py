@@ -90,6 +90,7 @@ class FeeGenerationSummaryResponse(BaseModel):
     """Summary of a `generate-from-attendance` run."""
 
     created: list[GeneratedFeeEntry]
+    updated: list[GeneratedFeeEntry]
     skipped_already_generated: int
     skipped_no_daily_fee: int
     skipped_zero_days: int

@@ -18,7 +18,6 @@ import { NavLink as RouterNavLink, useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import {
   FiCheckSquare,
-  FiDollarSign,
   FiHome,
   FiLogOut,
   FiMenu,
@@ -27,6 +26,7 @@ import {
   FiUser,
   FiUsers,
 } from 'react-icons/fi';
+import { FaIndianRupeeSign } from 'react-icons/fa6';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
 
@@ -41,7 +41,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: 'Dashboard', to: '/dashboard', icon: <FiHome /> },
     { label: 'Students', to: '/students', icon: <FiUsers /> },
     { label: 'Attendance', to: '/attendance', icon: <FiCheckSquare /> },
-    { label: 'Fees', to: '/fees', icon: <FiDollarSign /> },
+    { label: 'Fees', to: '/fees', icon: <FaIndianRupeeSign /> },
   ],
   parent: [
     { label: 'Dashboard', to: '/dashboard', icon: <FiHome /> },
